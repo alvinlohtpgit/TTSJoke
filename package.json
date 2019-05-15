@@ -1,0 +1,17 @@
+{
+  "name": "",
+  "version": "",
+  "description": "",
+  "scripts": {
+    "test": "echo \"No tests yet...\""
+  },
+  "author": "",
+  "dependencies": {
+    "devpun": "^1.4.0",
+    "memorystream": "^0.3.1",
+    "querystring": "^0.2.0",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "xmlbuilder": "^13.0.1"
+  }
+}
