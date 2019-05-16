@@ -7,8 +7,9 @@
   },
   "author": "",
   "dependencies": {
+    "azure-functions-core-tools": "^2.7.1158",
+    "azure-storage": "^2.10.3",
     "devpun": "^1.4.0",
-    "memorystream": "^0.3.1",
     "querystring": "^0.2.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",

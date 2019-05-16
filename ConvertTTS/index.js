@@ -2,10 +2,21 @@ const fs = require('fs');
 const request = require('request');
 const xmlbuilder = require('xmlbuilder');
 const querystring = require('querystring');
-const MemoryStream = require('memorystream');
+const storage = require('azure-storage');
+const path = require('path');
 
 module.exports = function (context, req) {
+
+    const subscriptionKey = "b7a3646cb49d49a99eb72e4bd2a4452b";
+    const containerName = "ttsjoketemp";
+
+
     context.log('Called TTS Conversion');
+
+    // Connect to the blob service
+    var connectionString = "DefaultEndpointsProtocol=https;AccountName=ttsjokestorage;AccountKey=25IvuBE3VYBJI8Rrmti9TsAoKhzfZiFiDusdZ6aOOsfKAxWerzhrYsEWZfCOwHSKYUw1xvojzIOHHLY0hzkafA==";
+    const blobService = storage.createBlobService(connectionString);
+
 
     var textToConvert = querystring.parse(req.body).saythis;
 
@@ -23,7 +34,6 @@ module.exports = function (context, req) {
 
     let body = xml_body.toString();
 
-    const subscriptionKey = "b7a3646cb49d49a99eb72e4bd2a4452b";
 
 
     // Call the async function to get the access token first
@@ -60,55 +70,54 @@ module.exports = function (context, req) {
             .on('response', (response) => {
 
                context.log("Response : " + response.statusCode);
+               /*
                requestobj.pipe(fs.createWriteStream('TTSOutput.wav')).on('finish' , function() {
 
                    // Upload the file onto the Azure Blob Storage
+                   const fullPath = path.resolve("TTSOutput.wav");
+                   const blobName = path.basename("TTSOutput.wav");
+                   blobService.createBlockBlobFromLocalFile(containerName , blobName , fullPath , function(){
+                      context.log("File is uploaded");
+                      context.res = {
+                          status: 200,
+                          body: "File Generated"
+                      };
+                      context.done();
+                   });
 
-                   // After the upload completes, send the context back with the generated file name
-                   // then delete the local file
 
 
+               }); */
 
-                   // Read the generated file
-                   /* var wavContent = fs.readFileSync("TTSOutput.wav");
-                   var wavContentBuffer = Buffer.from(wavContent).toString('base64');
-                   context.log('Read file into memory');
-                   context.log(wavContentBuffer);
-                   context.res = {
+               // The above doesn't work on remote Azure Functions
+                // Probably because we don't have a file system
+                // So we use stream to blob
+                var writeStream = blobService.createWriteStreamToBlockBlob(
+                    containerName ,
+                    "TTSOutput.wav",
+                    {
+                        contentSettings: {
+                            contentType: 'audio/x-wav'
+                        }
+                    },
+                    function(uploaderror, uploadresult , uploadresponse) {
+                        if (uploaderror){
+                            context.log("Cannot upload file");
+                            context.log(error);
+                        }
+                        else{
+                            context.log("File Uploaded to Storage");
+                        }
+                });
+
+                requestobj.pipe(writeStream).on('finish' , function(){
+                    context.log("File is uploaded");
+                    context.res = {
                         status: 200,
-                        headers: {
-                            "Content-Type" : "audio/wav"
-                        },
-                        isRaw: true,
-                        body: wavContentBuffer
-                    }; */
-
-                   context.done();
-               });
-
-            })
-
-
-
-
-        /*
-        request(optionsToConvertSpeech , function(err, resp , body){
-            context.log('Return body');
-
-            context.log(body);
-
-            context.res = {
-                status: 200,
-                headers:{
-                    "Content-Type" : "audio/wav"
-                },
-                body: body
-            };
-
-            context.done();
-        });
-        */
-
+                        body: "File Generated"
+                    };
+                    context.done();
+                });
 
 
 
