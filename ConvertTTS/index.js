@@ -4,6 +4,8 @@ const xmlbuilder = require('xmlbuilder');
 const querystring = require('querystring');
 const storage = require('azure-storage');
 const path = require('path');
+const ShortUniqueId = require('short-unique-id');
+var uid = new ShortUniqueId();
 
 module.exports = function (context, req) {
 
@@ -46,7 +48,7 @@ module.exports = function (context, req) {
     };
 
 
-    request(optionsTokenKey , function(err , response, tokenKey){
+    request(optionsTokenKey , function(err , response, tokenKey) {
 
         // Now that we have our token key, we can call the TTS service on Azure
         // Options for convert text to speech
@@ -65,78 +67,64 @@ module.exports = function (context, req) {
         };
 
 
-
         let requestobj = request(optionsToConvertSpeech)
             .on('response', (response) => {
 
-               context.log("Response : " + response.statusCode);
-               /*
-               requestobj.pipe(fs.createWriteStream('TTSOutput.wav')).on('finish' , function() {
+                context.log("Response : " + response.statusCode);
+                /*
+                requestobj.pipe(fs.createWriteStream('TTSOutput.wav')).on('finish' , function() {
 
-                   // Upload the file onto the Azure Blob Storage
-                   const fullPath = path.resolve("TTSOutput.wav");
-                   const blobName = path.basename("TTSOutput.wav");
-                   blobService.createBlockBlobFromLocalFile(containerName , blobName , fullPath , function(){
-                      context.log("File is uploaded");
-                      context.res = {
-                          status: 200,
-                          body: "File Generated"
-                      };
-                      context.done();
-                   });
+                    // Upload the file onto the Azure Blob Storage
+                    const fullPath = path.resolve("TTSOutput.wav");
+                    const blobName = path.basename("TTSOutput.wav");
+                    blobService.createBlockBlobFromLocalFile(containerName , blobName , fullPath , function(){
+                       context.log("File is uploaded");
+                       context.res = {
+                           status: 200,
+                           body: "File Generated"
+                       };
+                       context.done();
+                    });
 
 
 
-               }); */
+                }); */
 
-               // The above doesn't work on remote Azure Functions
+                // The above doesn't work on remote Azure Functions
                 // Probably because we don't have a file system
                 // So we use stream to blob
+
+                // We generate a random file name
+                var genFileName = uid.randomUUID(8) + ".wav";
                 var writeStream = blobService.createWriteStreamToBlockBlob(
-                    containerName ,
-                    "TTSOutput.wav",
+                    containerName,
+                    genFileName,
                     {
                         contentSettings: {
                             contentType: 'audio/x-wav'
                         }
                     },
-                    function(uploaderror, uploadresult , uploadresponse) {
-                        if (uploaderror){
+                    function (uploaderror, uploadresult, uploadresponse) {
+                        if (uploaderror) {
                             context.log("Cannot upload file");
                             context.log(error);
-                        }
-                        else{
+                        } else {
                             context.log("File Uploaded to Storage");
+                            context.res = {
+                                status: 200,
+                                body: genFileName
+                            };
+                            context.done();
                         }
-                });
+                    });
 
-                requestobj.pipe(writeStream).on('finish' , function(){
+                requestobj.pipe(writeStream).on('finish', function () {
                     context.log("File is uploaded");
-                    context.res = {
-                        status: 200,
-                        body: "File Generated"
-                    };
-                    context.done();
                 });
 
 
+            })
 
     })
-
-
-
-    /*
-    if (req.query.name || (req.body && req.body.name)) {
-        context.res = {
-            // status: 200,
-            body: "Hello " + (req.query.name || req.body.name)
-        };
-    }
-    else {
-        context.res = {
-            status: 400,
-            body: "Please pass a name on the query string or in the request body"
-        };
-    }*/
 
 };
